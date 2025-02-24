@@ -7,6 +7,7 @@ import { PitchDetector } from "pitchy";
 
 export default function RhythmStudy() {
     const [isRecording, setIsRecording] = useState(false);
+    let isDetecting = false;
 
     Tone.start();
     const analyserResolution = 4096;
@@ -18,21 +19,22 @@ export default function RhythmStudy() {
         return event.keyCode == 32;
     };
 
-    let detectionInterval: NodeJS.Timeout;
     const startRecording = () => {
         setIsRecording(true);
+        isDetecting = true;
+
         mic.open().then(() => {
             console.log('Microphone ready');
             mic.connect(analyser);
-            detectionInterval = setInterval(() => {
-                detectPitch();
-            }, 100);
+            detectPitch();
         }).catch(e => {
             console.log('Error opening microphone:', e);
         });
     }
 
     const detectPitch = () => {
+        if (!isDetecting) return;
+
         const values = analyser.getValue() as Float32Array;
         const [pitch, clarity] = pitchDetector.findPitch(values, Tone.getContext().sampleRate);
         if (clarity > 0.8 && pitch > 80 && pitch < 300) {
@@ -46,7 +48,7 @@ export default function RhythmStudy() {
 
     const stopRecording = () => {
         console.log("mic closed");
-        clearInterval(detectionInterval);
+        isDetecting = false;
         mic.close();
         setIsRecording(false);
     }
