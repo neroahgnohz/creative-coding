@@ -4,6 +4,8 @@ import loaderStyles from "../../css/loader.module.css";
 import * as Tone from "tone";
 import { useGlobalDOMEvent } from "@/hooks/dom-event";
 import { PitchDetector } from "pitchy";
+import dynamic from 'next/dynamic'
+
 
 type PitchTimestamp = {
     pitch: number;
@@ -23,7 +25,7 @@ type playerMap = {
     [key: number]: string;
 }
 
-export default function RhythmStudy() {
+const RhythmStudy = () => {
     const ANALYSER_SIZE = 4096;
     const BPM = 80;
     const [isRecording, setIsRecording] = useState(false);
@@ -292,3 +294,5 @@ export default function RhythmStudy() {
         </div>
     );
 }
+
+export default dynamic(() => Promise.resolve(RhythmStudy), { ssr: false });
