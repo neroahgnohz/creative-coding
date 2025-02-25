@@ -17,6 +17,7 @@ type SyllableBoundary = {
 };
 
 type Syllable = {
+    startOffset: number;
     duration: number;
     tone: number;
 }
@@ -108,13 +109,14 @@ const RhythmStudy = () => {
                 }, time);
             }, startTime);
 
-            const quantizedDuration = Tone.Time(syllable.duration / 1000).quantize("64n");
+            const quantizedDuration = Tone.Time((syllable.duration + syllable.startOffset) / 1000).quantize("64n");
             const newTime = currentTime + quantizedDuration;
             currentTime = newTime;
         });
         
         // add some space after scheduling
-        Tone.getTransport().loopEnd = (startTime.split(":")[0] + 0.75) + "m"; 
+        startTime = Tone.Time(currentTime).toBarsBeatsSixteenths();
+        Tone.getTransport().loopEnd = (startTime.split(":")[0] + 0.25) + "m"; 
     };
 
     const detectPitch = () => {
@@ -144,10 +146,18 @@ const RhythmStudy = () => {
     }
 
     const findSyllables = (syllableBoundaries: SyllableBoundary[]) => {
-        return syllableBoundaries.map((syllableBoundary) => {
+
+
+        return syllableBoundaries.map((syllableBoundary, index) => {
             const firstPitch = syllableBoundary.pitches[0];
             const lastPitch = syllableBoundary.pitches[syllableBoundary.pitches.length - 1];
+            let startOffset = 0;
+            if (index != 0) {
+                const syllableBoundaryPrev = syllableBoundaries[index -1];
+                startOffset = firstPitch.timestamp - syllableBoundaryPrev.pitches[syllableBoundaryPrev.pitches.length -1].timestamp
+            }
             return {
+                startOffset,
                 duration: lastPitch.timestamp - firstPitch.timestamp,
                 tone: detectTone(syllableBoundary.pitches)
             }
