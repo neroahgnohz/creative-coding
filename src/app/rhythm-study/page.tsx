@@ -19,20 +19,34 @@ type Syllable = {
     tone: number;
 }
 
+type playerMap = {
+    [key: number]: string;
+}
+
 export default function RhythmStudy() {
     const ANALYSER_SIZE = 4096;
+    const BPM = 80;
     const [isRecording, setIsRecording] = useState(false);
+    const [bgColor, setBgColor] = useState("white");
     const micRef = useRef<Tone.UserMedia | null>(null);
     const analyserRef = useRef<Tone.Analyser | null>(null);
     const pitchHistoryRef = useRef<PitchTimestamp[]>([]);
     const rafRef = useRef<number>(null);
     Tone.start();
-    const kit = new Tone.Players({
+    const tonePlayers = new Tone.Players({
         "kick": "/creative-coding/audio/kick.mp3", 
         "snare": "/creative-coding/audio/snare.mp3",
         "hh": "/creative-coding/audio/hh.mp3",
         "hho": "/creative-coding/audio/hho.mp3"
     });
+    const tonePlayersMap: playerMap = {
+        1: "snare",
+        2: "hho",
+        3: "hh",
+        4: "kick"
+    }
+    tonePlayers.toDestination();
+    Tone.getTransport().bpm.value = BPM;
 
     useEffect(() => {
         micRef.current = new Tone.UserMedia();
@@ -57,7 +71,50 @@ export default function RhythmStudy() {
     const isSpaceKey = (event: { keyCode: number; }) => {
         return event.keyCode == 32;
     };
-    
+
+    const scheduleToneRhythm = (syllables: Syllable[]) => {
+        Tone.getTransport().loop = true;
+        Tone.getTransport().loopStart = "0m";
+
+        let currentTime = 0;
+        let startTime = "";
+        syllables.forEach((syllable) => {
+            startTime = Tone.Time(currentTime).toBarsBeatsSixteenths();
+            console.log("start Time " + startTime);
+
+            Tone.getTransport().schedule((time) => {
+                tonePlayers.player(tonePlayersMap[syllable.tone]).start(time);
+                Tone.getDraw().schedule(() => {
+                    let bgColor = "white";
+                    switch (syllable.tone) {
+                        case 1:
+                            bgColor = "#F7F7F2";
+                            break;
+                        case 2:
+                            bgColor = "#B1DDF1";
+                            break; 
+                        case 3:
+                            bgColor = "#C8E9A0";
+                            break;
+                        case 4:
+                            bgColor = "#D7DCDF";
+                            break;
+                        default:
+                            break;
+                    }
+                    setBgColor(bgColor);
+                }, time);
+            }, startTime);
+
+            const quantizedDuration = Tone.Time(syllable.duration / 1000).quantize("64n");
+            const newTime = currentTime + quantizedDuration;
+            currentTime = newTime;
+        });
+        
+        // add some space after scheduling
+        Tone.getTransport().loopEnd = (startTime.split(":")[0] + 0.75) + "m"; 
+    };
+
     const detectPitch = () => {
         if (!analyserRef.current || !micRef.current || micRef.current.state == "stopped") return;
 
@@ -73,12 +130,13 @@ export default function RhythmStudy() {
                 pitch,
                 timestamp: Date.now()
             });
-            console.log(`
-                Pitch: ${pitch.toFixed(1)} Hz
-                Clarity: ${(clarity * 100).toFixed(0)}%
-                Time: ${Date.now()}
-                `
-            );
+            // For debugging
+            // console.log(`
+            //     Pitch: ${pitch.toFixed(1)} Hz
+            //     Clarity: ${(clarity * 100).toFixed(0)}%
+            //     Time: ${Date.now()}
+            //     `
+            // );
         }
         rafRef.current = requestAnimationFrame(() => detectPitch());
     }
@@ -174,7 +232,7 @@ export default function RhythmStudy() {
             const lastMergedSyllableBoundary = mergedSyllableBoundaries[mergedSyllableBoundaries.length - 1];
             const lastPitch = lastMergedSyllableBoundary.pitches[lastMergedSyllableBoundary.pitches.length - 1];
             const nextFirstPitch = syllableBoundary.pitches[0];
-            if (Math.abs(nextFirstPitch.pitch - lastPitch.pitch) <= 3 && nextFirstPitch.timestamp - lastPitch.timestamp <= 25) {
+            if (Math.abs(nextFirstPitch.pitch - lastPitch.pitch) <= 5 && nextFirstPitch.timestamp - lastPitch.timestamp <= 100) {
                 lastMergedSyllableBoundary.pitches.push(... syllableBoundary.pitches);
             } else {
                 mergedSyllableBoundaries.push(syllableBoundary);
@@ -190,12 +248,14 @@ export default function RhythmStudy() {
         console.log(mergedSyllableBoundaries);
 
         const syllables = findSyllables(mergedSyllableBoundaries);
-        console.log(syllables);
+        return syllables;
     }
 
     useGlobalDOMEvent("keydown", async (e) => {
         e.preventDefault();
         if (!isSpaceKey(e) || isRecording || !micRef.current) return;
+        Tone.getTransport().stop();
+        Tone.getTransport().cancel();
         setIsRecording(true);
         await micRef.current.open();
         pitchHistoryRef.current = [];
@@ -215,12 +275,14 @@ export default function RhythmStudy() {
         }
         setIsRecording(false);
 
-        processPitchHistory();
-        // console.log(pitchHistoryRef.current);
+        const syllables = processPitchHistory();
+        scheduleToneRhythm(syllables);
+        Tone.getTransport().start();
+
     });
 
     return (
-        <div className="grid place-items-center h-screen">
+        <div className="grid place-items-center h-screen" style={{ backgroundColor: bgColor}}>
             {!isRecording && 
                 <p className="leading-7 [&:not(:first-child)]:mt-6 text-xl">
                     Hold <b>SPACE</b> to record
