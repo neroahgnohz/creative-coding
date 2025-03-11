@@ -6,14 +6,18 @@ import dynamic from "next/dynamic";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useRef, useState } from "react";
 import { Fourier } from "@/lib/fft";
+import * as Tone from "tone";
 
 type CharImage = {
     id: number,
     char: string,
     src: string,
     fftCanvas: string,
+    fftData: ImageData | undefined,
     overlayCanvas: string,
 };
+
+const CHINESE_PENTATONIC_SCALE = [261.63, 293.66, 329.63, 392.00, 440.00];
 
 const MelodyStudy = () => {
     const CANVAS_WIDTH = 512;
@@ -24,13 +28,19 @@ const MelodyStudy = () => {
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const [sentence, setSentence] = useState("");
     const [images, setImages] = useState<CharImage[]>([]);
+    const [toneSequence, setToneSequence] = useState<Tone.Sequence<string> | null>(null);
+    const synth = new Tone.Synth().toDestination();
 
     const convertToMelody = () => {
         if (sentence.length === 0) {
             return;
         }
 
-        convertToImages();
+        const charImages = convertToImages();
+        setImages(charImages);
+
+        const toneSequence = convertToSequence(charImages, synth);
+        setToneSequence(toneSequence);
     };
 
     const convertToImages = () => {
@@ -46,10 +56,11 @@ const MelodyStudy = () => {
               char,
               src: canvas.toDataURL("image/png"),
               fftCanvas: fftCanvas.toDataURL("image/png"),
+              fftData: fftCanvas.getContext("2d")?.getImageData(0, 0, fftCanvas.width, fftCanvas.height),
               overlayCanvas: overlayCanvas.toDataURL("image/png"),
             };
         });
-        setImages(charImages);
+        return charImages
     }
 
     const convertToCharImage = (char: string) => {
@@ -135,6 +146,46 @@ const MelodyStudy = () => {
         return outputCanvas;
     }
 
+    const convertToSequence = (charImages: any[], synth: any) => {
+        const notes = charImages.flatMap((image, index) => {
+            const imageData = image.fftData;
+            if (imageData) {
+                const data = new Float32Array(imageData.data.length / 4);
+                for (let i = 0; i < data.length; i++) {
+                    data[i] = imageData.data[i * 4] / 255;
+                }
+
+                const frequencies = [];
+                const rows = imageData.height;
+                const cols = imageData.width;
+
+                const step = Math.max(1, Math.floor(rows / 10));
+                for (let row = 0; row < rows; row += step) {
+                    for (let col = 0; col < cols; col += step) {
+                        const value = data[row * cols + col];
+                        if (value > 0.1) {
+                            const scaledValue = value * (CHINESE_PENTATONIC_SCALE.length - 1);
+                            const noteIndex = Math.round(scaledValue);
+                            const frequency = CHINESE_PENTATONIC_SCALE[noteIndex];
+                            frequencies.push(Tone.Frequency(frequency).toNote());
+                        }
+                    }
+                }
+
+                return frequencies;
+            }
+            return [];
+        });
+
+        console.log(notes);
+        const sequence = new Tone.Sequence((time, note) => {
+            synth.triggerAttackRelease(note, 0.1, time);
+        }, notes);
+
+        console.log(synth);
+        return sequence;
+    }
+
     useEffect(() => {
         const textarea = textareaRef.current;
         if (textarea) {
@@ -142,6 +193,21 @@ const MelodyStudy = () => {
             textarea.style.height = `${textarea.scrollHeight}px`;
         }
     }, [sentence]);
+
+    useEffect(() => {
+        if (toneSequence) {
+            console.log("Playing melody");
+            toneSequence.start(0);
+            Tone.getTransport().start();
+        }
+
+        return () => {
+            if (toneSequence) {
+                toneSequence.stop();
+                Tone.getTransport().stop();
+            }
+        };
+    }, [toneSequence]);
 
     return (
         <div>
