@@ -17,7 +17,13 @@ type CharImage = {
     overlayCanvas: string,
 };
 
-const CHINESE_PENTATONIC_SCALE = [261.63, 293.66, 329.63, 392.00, 440.00];
+// const CHINESE_PENTATONIC_SCALE = [261.63, 293.66, 329.63, 392.00, 440.00];
+
+const CHINESE_PENTATONIC_SCALE = [
+    261.63, 293.66, 329.63, 392.00, 440.00, // C4, D4, E4, G4, A4
+    523.25, 587.33, 659.25, 783.99, 880.00, // C5, D5, E5, G5, A5
+    1046.50, 1174.66, 1318.51, 1567.98, 1760.00 // C6, D6, E6, G6, A6
+];
 
 const MelodyStudy = () => {
     const CANVAS_WIDTH = 512;
@@ -53,7 +59,6 @@ const MelodyStudy = () => {
         const chars = sentence.split("");
         const charImages = chars.map((char, index) => {    
             const canvas = convertToCharImage(char);
-            const ctx = canvas.getContext("2d");
             const fftCanvas = generateImageFromFFT(canvas);
             const overlayCanvas = overlayCharOverFFTImage(fftCanvas, char);
 
@@ -152,8 +157,8 @@ const MelodyStudy = () => {
         return outputCanvas;
     }
 
-    const convertToSequence = (charImages: any[], synth: any) => {
-        const notes = charImages.flatMap((image, index) => {
+    const convertToSequence = (charImages: CharImage[], synth: Tone.Synth<Tone.SynthOptions>) => {
+        const notes = charImages.flatMap((image) => {
             const imageData = image.fftData;
             if (imageData) {
                 const data = new Float32Array(imageData.data.length / 4);
@@ -276,7 +281,7 @@ const MelodyStudy = () => {
                         {images.map((image) => (
                             <Card key={image.id} className="aspect-square">
                                 <CardContent className="p-2">
-                                    <img src={image.overlayCanvas} alt={`${image.char} FFT`} className="w-full h-full object-contain" />
+                                    <img src={image.overlayCanvas} alt={`${image.char} FFT`} className="w-full h-full object-contain"/>
                                 </CardContent>
                             </Card>
                         ))}

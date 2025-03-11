@@ -65,16 +65,14 @@ function FFT(sig: number[], out: Complex[]): void {
     if (sig.length === 0) {
         const e = new Error("Cannot transform an image with size of zero.");
         e.name = "RangeError";
-        (e as any).givenLength = sig.length;
         throw e;
     }
     if (sig.length & (sig.length - 1)) {
         const e = new Error("Unimplemented: Only FFT of signals of length power of 2 supported by this implementation. Given: " + sig.length);
         e.name = "RangeError";
-        (e as any).givenLength = sig.length;
         throw e;
     }
-    rec_FFT_radix2(out, 0, sig, 0, sig.length, 1, 2);
+    rec_FFT_radix2(out, 0, sig, 0, sig.length, 1);
 }
 
 function rec_FFT_radix2(out: Complex[], start: number, sig: number[], offset: number, N: number, s: number): void {
@@ -89,25 +87,6 @@ function rec_FFT_radix2(out: Complex[], start: number, sig: number[], offset: nu
             out[start + k] = t.plus(twiddle.times(out[start + k + N / 2]));
             out[start + k + N / 2] = t.minus(twiddle.times(out[start + k + N / 2]));
         }
-    }
-}
-
-function invFFT(transform: Complex[], sig: number[]): void {
-    if (transform.length === 0) {
-        const e = new Error("Cannot transform an image with size of zero.");
-        e.name = "RangeError";
-        (e as any).givenLength = transform.length;
-        throw e;
-    }
-    if (transform.length & (transform.length - 1)) {
-        const e = new Error("Unimplemented: Only FFT of signals of length power of 2 supported by this implementation. Given: " + transform.length);
-        e.name = "RangeError";
-        (e as any).givenLength = transform.length;
-        throw e;
-    }
-    rec_invFFT_radix2(sig, 0, transform, 0, transform.length, 1);
-    for (let ai = 0; ai < sig.length; ai++) {
-        sig[ai] = sig[ai] / transform.length;
     }
 }
 
@@ -172,7 +151,6 @@ function flipRightHalf(transform: Complex[], dims: [number, number]): Complex[] 
 export const Fourier = {
     Complex,
     transform: FFT,
-    invert: invFFT,
     shift: shiftFFT,
     unshift: unshiftFFT,
     filter: filter
