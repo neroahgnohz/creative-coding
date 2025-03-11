@@ -172,21 +172,26 @@ const MelodyStudy = () => {
 
                 let maxValue = -Infinity;
                 let minValue = Infinity;
-                for (let row = 0; row < rows; row++) {
-                    for (let col = 0; col < cols; col++) {
+                const centerRowStart = Math.floor(rows / 2) - 25;
+                const centerColStart = Math.floor(cols / 2) - 25;
+                const centerRowEnd = centerRowStart + 50;
+                const centerColEnd = centerColStart + 50;
+
+                for (let row = centerRowStart; row < centerRowEnd; row++) {
+                    for (let col = centerColStart; col < centerColEnd; col++) {
                         const value = data[row * cols + col];
                         if (value > maxValue) maxValue = value;
                         if (value < minValue) minValue = value;
                     }
                 }
 
-                const step = Math.max(1, Math.floor(rows / 10));
+                const step = Math.max(1, Math.floor(50 / 10));
                 const lastThreeFrequencies: string[] = [];
-                for (let row = 0; row < rows; row += step) {
-                    for (let col = 0; col < cols; col += step) {
+                for (let row = centerRowStart; row < centerRowEnd; row += step) {
+                    for (let col = centerColStart; col < centerColEnd; col += step) {
                         const value = data[row * cols + col];
                         const normalizedValue = (value - minValue) / (maxValue - minValue);
-                        const transformedValue = Math.pow(normalizedValue, 2); // Squaring the value
+                        const transformedValue = Math.pow(normalizedValue, 2);
                         const scaledValue = transformedValue * (CHINESE_PENTATONIC_SCALE.length - 1);
                         const noteIndex = Math.round(scaledValue);
                         const frequency = CHINESE_PENTATONIC_SCALE[noteIndex];
@@ -202,6 +207,39 @@ const MelodyStudy = () => {
                         frequencies.push(note);
                     }
                 }
+
+                // let maxValue = -Infinity;
+                // let minValue = Infinity;
+                // for (let row = 0; row < rows; row++) {
+                //     for (let col = 0; col < cols; col++) {
+                //         const value = data[row * cols + col];
+                //         if (value > maxValue) maxValue = value;
+                //         if (value < minValue) minValue = value;
+                //     }
+                // }
+
+                // const step = Math.max(1, Math.floor(rows / 10));
+                // const lastThreeFrequencies: string[] = [];
+                // for (let row = 0; row < rows; row += step) {
+                //     for (let col = 0; col < cols; col += step) {
+                //         const value = data[row * cols + col];
+                //         const normalizedValue = (value - minValue) / (maxValue - minValue);
+                //         const transformedValue = Math.pow(normalizedValue, 2); // Squaring the value
+                //         const scaledValue = transformedValue * (CHINESE_PENTATONIC_SCALE.length - 1);
+                //         const noteIndex = Math.round(scaledValue);
+                //         const frequency = CHINESE_PENTATONIC_SCALE[noteIndex];
+                //         const note = Tone.Frequency(frequency).toNote();
+
+                //         if (lastThreeFrequencies.length === 3) {
+                //             if (lastThreeFrequencies.every(f => f === note)) {
+                //                 continue;
+                //             }
+                //             lastThreeFrequencies.shift();
+                //         }
+                //         lastThreeFrequencies.push(note);
+                //         frequencies.push(note);
+                //     }
+                // }
 
                 return frequencies;
             }

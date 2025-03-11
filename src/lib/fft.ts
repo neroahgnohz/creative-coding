@@ -90,21 +90,6 @@ function rec_FFT_radix2(out: Complex[], start: number, sig: number[], offset: nu
     }
 }
 
-function rec_invFFT_radix2(sig: Complex[], start: number, transform: Complex[], offset: number, N: number, s: number): void {
-    if (N === 1) {
-        sig[start] = transform[offset];
-    } else {
-        rec_invFFT_radix2(sig, start, transform, offset, N / 2, 2 * s);
-        rec_invFFT_radix2(sig, start + N / 2, transform, offset + s, N / 2, 2 * s);
-        for (let k = 0; k < N / 2; k++) {
-            const twiddle = cisExp(2 * Math.PI * k / N);
-            const t = sig[start + k];
-            sig[start + k] = t.plus(twiddle.times(sig[start + k + N / 2]));
-            sig[start + k + N / 2] = t.minus(twiddle.times(sig[start + k + N / 2]));
-        }
-    }
-}
-
 function shiftFFT(transform: Complex[], dims: [number, number]): Complex[] {
     return flipRightHalf(halfShiftFFT(halfShiftFFT(transform, dims), dims), dims);
 }
