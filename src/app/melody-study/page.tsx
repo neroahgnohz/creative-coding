@@ -28,7 +28,7 @@ const MelodyStudy = () => {
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const [sentence, setSentence] = useState("");
     const [images, setImages] = useState<CharImage[]>([]);
-    const [toneSequence, setToneSequence] = useState<Tone.Sequence<string> | null>(null);
+    const [toneSequence, setToneSequence] = useState<Tone.Sequence | null>(null);
     const synth = new Tone.Synth().toDestination();
 
     const convertToMelody = () => {
@@ -39,8 +39,14 @@ const MelodyStudy = () => {
         const charImages = convertToImages();
         setImages(charImages);
 
-        const toneSequence = convertToSequence(charImages, synth);
-        setToneSequence(toneSequence);
+        if (toneSequence) {
+            toneSequence.stop();
+            toneSequence.dispose();
+            Tone.getTransport().stop();
+            Tone.getTransport().cancel();
+        }
+        const newToneSequence = convertToSequence(charImages, synth);
+        setToneSequence(newToneSequence);
     };
 
     const convertToImages = () => {
@@ -54,10 +60,10 @@ const MelodyStudy = () => {
             return {
               id: index,
               char,
-              src: canvas.toDataURL("image/png"),
-              fftCanvas: fftCanvas.toDataURL("image/png"),
+              src: canvas.toDataURL("/creative-coding/image/png"),
+              fftCanvas: fftCanvas.toDataURL("/creative-coding/image/png"),
               fftData: fftCanvas.getContext("2d")?.getImageData(0, 0, fftCanvas.width, fftCanvas.height),
-              overlayCanvas: overlayCanvas.toDataURL("image/png"),
+              overlayCanvas: overlayCanvas.toDataURL("/creative-coding/image/png"),
             };
         });
         return charImages
@@ -159,16 +165,36 @@ const MelodyStudy = () => {
                 const rows = imageData.height;
                 const cols = imageData.width;
 
+                let maxValue = -Infinity;
+                let minValue = Infinity;
+                for (let row = 0; row < rows; row++) {
+                    for (let col = 0; col < cols; col++) {
+                        const value = data[row * cols + col];
+                        if (value > maxValue) maxValue = value;
+                        if (value < minValue) minValue = value;
+                    }
+                }
+
                 const step = Math.max(1, Math.floor(rows / 10));
+                const lastThreeFrequencies: string[] = [];
                 for (let row = 0; row < rows; row += step) {
                     for (let col = 0; col < cols; col += step) {
                         const value = data[row * cols + col];
-                        if (value > 0.1) {
-                            const scaledValue = value * (CHINESE_PENTATONIC_SCALE.length - 1);
-                            const noteIndex = Math.round(scaledValue);
-                            const frequency = CHINESE_PENTATONIC_SCALE[noteIndex];
-                            frequencies.push(Tone.Frequency(frequency).toNote());
+                        const normalizedValue = (value - minValue) / (maxValue - minValue);
+                        const transformedValue = Math.pow(normalizedValue, 2); // Squaring the value
+                        const scaledValue = transformedValue * (CHINESE_PENTATONIC_SCALE.length - 1);
+                        const noteIndex = Math.round(scaledValue);
+                        const frequency = CHINESE_PENTATONIC_SCALE[noteIndex];
+                        const note = Tone.Frequency(frequency).toNote();
+
+                        if (lastThreeFrequencies.length === 3) {
+                            if (lastThreeFrequencies.every(f => f === note)) {
+                                continue;
+                            }
+                            lastThreeFrequencies.shift();
                         }
+                        lastThreeFrequencies.push(note);
+                        frequencies.push(note);
                     }
                 }
 
@@ -177,10 +203,30 @@ const MelodyStudy = () => {
             return [];
         });
 
-        console.log(notes);
+        const mergedNotes = [];
+        let currentNote = null;
+        let currentDuration = 0.1;
+
+        for (const note of notes) {
+            if (note === currentNote) {
+                currentDuration += 0.1;
+            } else {
+                if (currentNote) {
+                    mergedNotes.push({ note: currentNote, duration: currentDuration });
+                }
+                currentNote = note;
+                currentDuration = 0.1;
+            }
+        }
+
+        if (currentNote) {
+            mergedNotes.push({ note: currentNote, duration: currentDuration });
+        }
+
+        console.log(mergedNotes);
         const sequence = new Tone.Sequence((time, note) => {
-            synth.triggerAttackRelease(note, 0.1, time);
-        }, notes);
+            synth.triggerAttackRelease(note.note, note.duration, time);
+        }, mergedNotes);
 
         console.log(synth);
         return sequence;
@@ -197,6 +243,7 @@ const MelodyStudy = () => {
     useEffect(() => {
         if (toneSequence) {
             console.log("Playing melody");
+            toneSequence.loop = false;
             toneSequence.start(0);
             Tone.getTransport().start();
         }
