@@ -3,14 +3,15 @@
 import { useEffect, useRef, useState } from 'react';
 import * as Tone from 'tone';
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
+import { Sphere } from '@/components/three/sphere';
 
 export default function TimbreStudy() {
   const [isPlaying, setIsPlaying] = useState(false);
   const oscillatorsRef = useRef<Tone.Oscillator[]>([]);
   const [volumes, setVolumes] = useState<number[]>([]);
   const masterGainRef = useRef<Tone.Gain | null>(null);
-  const NUM_BINS = 10;
+  const NUM_BINS = 32;
   const MIN_VOLUME = -100;
 
   const createOscillators = () => {
@@ -73,8 +74,18 @@ export default function TimbreStudy() {
   return (
     <div className="min-h-screen bg-black text-white p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">FFT Data Synthesizer</h1>
+        <h1 className="text-3xl font-bold mb-8">3D Synthesizer</h1>
         
+        <div className="relative w-full aspect-square">
+          <Canvas className="absolute inset-0">
+            <OrbitControls enableZoom={false}/>
+            <ambientLight intensity={0.5} />
+            <pointLight position={[10, 10, 10]} />
+            <Sphere radius={15} widthSegments={NUM_BINS} heightSegments={NUM_BINS} />
+            <PerspectiveCamera makeDefault position={[0, 0, 50]} />
+          </Canvas>
+        </div>
+
         <div className="mb-8">
           <button
             onClick={togglePlayback}
