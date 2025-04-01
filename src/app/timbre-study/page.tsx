@@ -9,7 +9,6 @@ import { Sphere, SphereRef } from "@/components/three/sphere";
 export default function TimbreStudy() {
   const [isPlaying, setIsPlaying] = useState(false);
   const oscillatorsRef = useRef<Tone.Oscillator[]>([]);
-  const [volumes, setVolumes] = useState<number[]>([]);
   const masterGainRef = useRef<Tone.Gain | null>(null);
   const NUM_BINS = 32;
   const MIN_VOLUME = -100;
@@ -23,9 +22,6 @@ export default function TimbreStudy() {
     const maxFreq = 4000;
 
     const interval = (maxFreq - minFreq) / NUM_BINS;
-
-    const initialVolumes = new Array(NUM_BINS).fill(MIN_VOLUME);
-    setVolumes(initialVolumes);
 
     const masterGain = new Tone.Gain(-10).toDestination();
     masterGainRef.current = masterGain;
@@ -74,12 +70,11 @@ export default function TimbreStudy() {
     const updateAmplitudes = () => {
       const amplitudes = sphereRef.current?.getVertexAmplitudes(currentColumnRef.current) || [];
       
-      console.log(amplitudes);
       oscillatorsRef.current.forEach((osc, i) => {
         const amplitude = amplitudes[i] || 0;
         const volume = amplitude == 15 ? -100 : -50 + amplitude * 5;
         console.log(volume);
-        osc.volume.rampTo(volume, 0.1);
+        osc.volume.rampTo(volume);
       });
 
       setTimeout(() => {
