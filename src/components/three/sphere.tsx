@@ -200,4 +200,6 @@ const Sphere = forwardRef<SphereRef, SphereProps>(({ radius, widthSegments, heig
   );
 });
 
+Sphere.displayName = 'Sphere';
+
 export { Sphere };
