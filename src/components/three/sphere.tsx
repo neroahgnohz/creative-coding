@@ -7,13 +7,14 @@ interface SphereProps {
   widthSegments: number;
   heightSegments: number;
   isPlaying: boolean;
+  currentColumn: number;
 }
 
 export interface SphereRef {
   getVertexAmplitudes: (columnIndex: number) => number[];
 }
 
-const Sphere = forwardRef<SphereRef, SphereProps>(({ radius, widthSegments, heightSegments, isPlaying }, ref) => {
+const Sphere = forwardRef<SphereRef, SphereProps>(({ radius, widthSegments, heightSegments, isPlaying, currentColumn }, ref) => {
   const pointsRef = useRef<THREE.Points>(null);
   const [isLeftMouseDown, setIsLeftMouseDown] = useState(false);
   const prevMouse = useRef({ x: 0, y: 0 });
@@ -182,6 +183,30 @@ const Sphere = forwardRef<SphereRef, SphereProps>(({ radius, widthSegments, heig
       setIsLeftMouseDown(false);
     }
   };
+
+  // Add effect to update colors when playing or currentColumn changes
+  useEffect(() => {
+    if (!pointsRef.current || !currentPositions.current) return;
+
+    const colors = pointsRef.current.geometry.attributes.color.array as Float32Array;
+    
+    for (let i = 0; i < colors.length; i += 3) {
+      const vertexIndex = i / 3;
+      const columnIndex = vertexIndex % (widthSegments + 1);
+      
+      if (isPlaying && columnIndex === currentColumn) {
+        colors[i] = 1;     // R
+        colors[i + 1] = 1; // G
+        colors[i + 2] = 0; // B
+      } else {
+        colors[i] = 0;     // R
+        colors[i + 1] = 0; // G
+        colors[i + 2] = 1; // B
+      }
+    }
+    
+    pointsRef.current.geometry.attributes.color.needsUpdate = true;
+  }, [isPlaying, currentColumn, widthSegments]);
 
   return (
     <points

@@ -14,7 +14,7 @@ export default function TimbreStudy() {
   const MIN_VOLUME = -100;
   const sphereRef = useRef<SphereRef>(null);
   const [duration, setDuration] = useState(0.001);
-  const currentColumnRef = useRef(0);
+  const [currentColumn, setCurrentColumn] = useState(0);
 
   const createOscillators = () => {
     const oscillators: Tone.Oscillator[] = [];
@@ -58,7 +58,7 @@ export default function TimbreStudy() {
     } else {
       await Tone.start();
       Tone.getTransport().start();
-      currentColumnRef.current = 0;
+      setCurrentColumn(0);
       oscillatorsRef.current.forEach(osc => osc.start());
       setIsPlaying(true);
     }
@@ -68,18 +68,18 @@ export default function TimbreStudy() {
     if (!isPlaying || !sphereRef.current) return;
 
     const updateAmplitudes = () => {
-      const amplitudes = sphereRef.current?.getVertexAmplitudes(currentColumnRef.current) || [];
+      const amplitudes = sphereRef.current?.getVertexAmplitudes(currentColumn) || [];
       
       oscillatorsRef.current.forEach((osc, i) => {
         const amplitude = amplitudes[i] || 0;
-        const volume = amplitude == 15 ? -100 : -50 + amplitude * 5;
+        const volume = amplitude == 15 ? -100 : -50 + amplitude * 2;
         console.log(volume);
         osc.volume.rampTo(volume);
       });
 
       setTimeout(() => {
         if (isPlaying) {
-          currentColumnRef.current = (currentColumnRef.current + 1) % (NUM_BINS * 2);
+          setCurrentColumn((prev) => (prev + 1) % (NUM_BINS * 2));
         }
       }, duration * 1000);
     };
@@ -87,7 +87,7 @@ export default function TimbreStudy() {
     // Update amplitudes every frame
     const interval = setInterval(updateAmplitudes, 1000 / 60);
     return () => clearInterval(interval);
-  }, [isPlaying, oscillatorsRef.current, duration]);
+  }, [isPlaying, oscillatorsRef.current, duration, currentColumn]);
 
   return (
     <div className="min-h-screen bg-black text-white p-8">
@@ -104,6 +104,7 @@ export default function TimbreStudy() {
               widthSegments={NUM_BINS * 2} 
               heightSegments={NUM_BINS} 
               isPlaying={isPlaying}
+              currentColumn={currentColumn}
             />
             <PerspectiveCamera makeDefault position={[0, 0, 50]} />
           </Canvas>
