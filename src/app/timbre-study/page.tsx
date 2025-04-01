@@ -92,8 +92,6 @@ export default function TimbreStudy() {
   return (
     <div className="min-h-screen bg-black text-white p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">3D Synthesizer</h1>
-        
         <div className="relative w-full aspect-square">
           <Canvas className="absolute inset-0">
             <ambientLight intensity={0.5} />
@@ -110,14 +108,7 @@ export default function TimbreStudy() {
           </Canvas>
         </div>
 
-        <div className="mb-8 flex items-center gap-4">
-          <button
-            onClick={togglePlayback}
-            className="px-4 py-2 bg-blue-500 rounded hover:bg-blue-600 transition-colors"
-          >
-            {isPlaying ? 'Stop' : 'Play'}
-          </button>
-
+        <div className="mb-8 flex items-center gap-4 justify-center">
           <div className="flex items-center gap-2">
             <label htmlFor="duration" className="text-sm">Duration (s):</label>
             <input
@@ -128,10 +119,17 @@ export default function TimbreStudy() {
               step="0.001"
               value={duration}
               onChange={(e) => setDuration(Number(e.target.value))}
-              className="w-32 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+              className="w-32 h-2 bg-gray-700 accent-white rounded-lg appearance-none cursor-pointer"
             />
             <span className="text-sm">{duration.toFixed(3)}s</span>
           </div>
+
+          <button
+            onClick={togglePlayback}
+            className="px-4 py-2 bg-white text-black rounded hover:bg-blue-600 transition-colors"
+          >
+            {isPlaying ? 'Stop' : 'Play'}
+          </button>
         </div>
       </div>
     </div>

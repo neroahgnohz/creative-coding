@@ -40,7 +40,7 @@ const Sphere = forwardRef<SphereRef, SphereProps>(({ radius, widthSegments, heig
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === '=') {  // Only allow increasing radius
+      if (event.key === '=' || event.key === '-') {
         event.preventDefault();
 
         if (pointsRef.current && currentPositions.current && currentRadii.current) {
@@ -55,7 +55,17 @@ const Sphere = forwardRef<SphereRef, SphereProps>(({ radius, widthSegments, heig
             
             if (colors[i] > 0) {
               const direction = vertex.clone().normalize();
-              currentRadii.current[i/3] += 0.5 * colors[i];
+              const currentRadius = currentRadii.current[i/3];
+              
+              // Calculate new radius based on key pressed
+              let newRadius = currentRadius;
+              if (event.key === '=') {
+                newRadius += 0.5 * colors[i];
+              } else if (event.key === '-') {
+                newRadius = Math.max(radius, currentRadius - 0.5 * colors[i]);
+              }
+              
+              currentRadii.current[i/3] = newRadius;
               const targetRadius = currentRadii.current[i/3];
               
               currentPositions.current[i] = direction.x * targetRadius;
