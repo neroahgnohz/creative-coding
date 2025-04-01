@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useEffect } from "react";
+import { useState, useRef, useMemo, useEffect, forwardRef, useImperativeHandle } from "react";
 import { ThreeEvent, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
@@ -6,9 +6,14 @@ interface SphereProps {
   radius: number;
   widthSegments: number;
   heightSegments: number;
+  isPlaying: boolean;
 }
 
-const Sphere = ({ radius, widthSegments, heightSegments }: SphereProps) => {
+export interface SphereRef {
+  getVertexAmplitudes: (columnIndex: number) => number[];
+}
+
+const Sphere = forwardRef<SphereRef, SphereProps>(({ radius, widthSegments, heightSegments, isPlaying }, ref) => {
   const pointsRef = useRef<THREE.Points>(null);
   const [isLeftMouseDown, setIsLeftMouseDown] = useState(false);
   const prevMouse = useRef({ x: 0, y: 0 });
@@ -17,11 +22,25 @@ const Sphere = ({ radius, widthSegments, heightSegments }: SphereProps) => {
   const currentPositions = useRef<Float32Array | null>(null);
   const currentRadii = useRef<Float32Array | null>(null);
 
+  useImperativeHandle(ref, () => ({
+    getVertexAmplitudes: (columnIndex: number) => {
+      if (!currentRadii.current) return [];
+      
+      const amplitudes: number[] = [];
+      
+      for (let j = 0; j <= heightSegments; j++) {
+        const index = j * (widthSegments + 1) + columnIndex;
+        amplitudes[j] = currentRadii.current[index];
+      }
+      
+      return amplitudes;
+    }
+  }));
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === '-' || event.key === '=') {
+      if (event.key === '=') {  // Only allow increasing radius
         event.preventDefault();
-        const delta = event.key === '-' ? -1 : 1;
 
         if (pointsRef.current && currentPositions.current && currentRadii.current) {
           const positions = pointsRef.current.geometry.attributes.position.array as Float32Array;
@@ -35,7 +54,7 @@ const Sphere = ({ radius, widthSegments, heightSegments }: SphereProps) => {
             
             if (colors[i] > 0) {
               const direction = vertex.clone().normalize();
-              currentRadii.current[i/3] += delta * 0.5 * colors[i];
+              currentRadii.current[i/3] += 0.5 * colors[i];
               const targetRadius = currentRadii.current[i/3];
               
               currentPositions.current[i] = direction.x * targetRadius;
@@ -89,6 +108,9 @@ const Sphere = ({ radius, widthSegments, heightSegments }: SphereProps) => {
   }, [radius, widthSegments, heightSegments]);
 
   const handleMouseMove = (event: ThreeEvent<PointerEvent>) => {
+    // Don't handle mouse events if playing
+    if (isPlaying) return;
+
     if (isLeftMouseDown && pointsRef.current) {
       const deltaX = event.clientX - prevMouse.current.x;
       const deltaY = event.clientY - prevMouse.current.y;
@@ -142,6 +164,9 @@ const Sphere = ({ radius, widthSegments, heightSegments }: SphereProps) => {
   };
 
   const handleMouseDown = (event: ThreeEvent<PointerEvent>) => {
+    // Don't handle mouse events if playing
+    if (isPlaying) return;
+    
     if (event.button === 0) {
       setIsLeftMouseDown(true);
       prevMouse.current.x = event.clientX;
@@ -150,6 +175,9 @@ const Sphere = ({ radius, widthSegments, heightSegments }: SphereProps) => {
   };
 
   const handleMouseUp = (event: ThreeEvent<PointerEvent>) => {
+    // Don't handle mouse events if playing
+    if (isPlaying) return;
+    
     if (event.button === 0) {
       setIsLeftMouseDown(false);
     }
@@ -170,6 +198,6 @@ const Sphere = ({ radius, widthSegments, heightSegments }: SphereProps) => {
       />
     </points>
   );
-};
+});
 
 export { Sphere };
