@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo, useEffect } from "react";
-import { ThreeEvent, useThree, useFrame } from "@react-three/fiber";
+import { ThreeEvent, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
 interface SphereProps {
@@ -90,8 +90,8 @@ const Sphere = ({ radius, widthSegments, heightSegments }: SphereProps) => {
 
   const handleMouseMove = (event: ThreeEvent<PointerEvent>) => {
     if (isLeftMouseDown && pointsRef.current) {
-      let deltaX = event.clientX - prevMouse.current.x;
-      let deltaY = event.clientY - prevMouse.current.y;
+      const deltaX = event.clientX - prevMouse.current.x;
+      const deltaY = event.clientY - prevMouse.current.y;
 
       pointsRef.current.rotation.y += deltaX * 0.01;
       pointsRef.current.rotation.x += deltaY * 0.01;
