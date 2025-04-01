@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import * as Tone from 'tone';
-import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
+import { Canvas } from "@react-three/fiber";
+import { PerspectiveCamera } from "@react-three/drei";
 import { Sphere } from '@/components/three/sphere';
 
 export default function TimbreStudy() {
@@ -78,10 +78,9 @@ export default function TimbreStudy() {
         
         <div className="relative w-full aspect-square">
           <Canvas className="absolute inset-0">
-            <OrbitControls enableZoom={false}/>
             <ambientLight intensity={0.5} />
             <pointLight position={[10, 10, 10]} />
-            <Sphere radius={15} widthSegments={NUM_BINS} heightSegments={NUM_BINS} />
+            <Sphere radius={15} widthSegments={NUM_BINS * 2} heightSegments={NUM_BINS} />
             <PerspectiveCamera makeDefault position={[0, 0, 50]} />
           </Canvas>
         </div>
