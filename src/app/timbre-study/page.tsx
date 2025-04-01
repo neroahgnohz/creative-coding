@@ -54,13 +54,6 @@ export default function TimbreStudy() {
     };
   }, []);
 
-  const handleVolumeChange = (sliderIndex: number, value: number) => {
-    const newVolumes = [...volumes];
-    newVolumes[sliderIndex] = value;
-    oscillatorsRef.current[sliderIndex].volume.rampTo(value);
-    setVolumes(newVolumes);
-  };
-
   const togglePlayback = async () => {
     if (isPlaying) {
       Tone.getTransport().stop();
