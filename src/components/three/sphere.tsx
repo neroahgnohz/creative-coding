@@ -86,7 +86,6 @@ const Sphere = forwardRef<SphereRef, SphereProps>(({ radius, widthSegments, heig
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Create points in a sphere shape
   const points = useMemo(() => {
     const positions: number[] = [];
     const colors: number[] = [];
@@ -111,7 +110,6 @@ const Sphere = forwardRef<SphereRef, SphereProps>(({ radius, widthSegments, heig
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     
-    // Store current positions and radii
     currentPositions.current = new Float32Array(positions);
     currentRadii.current = new Float32Array(radii);
     
@@ -155,9 +153,9 @@ const Sphere = forwardRef<SphereRef, SphereProps>(({ radius, widthSegments, heig
                 const dist = vertex.distanceTo(localPoint);
                 const highlight = Math.max(0, 1 - dist / 2.0); // 2.0 is highlight radius
                 
-                colors[i] = 0 + highlight;     // R
-                colors[i + 1] = 0;             // G
-                colors[i + 2] = 1 - highlight; // B
+                colors[i] = 0 + highlight;
+                colors[i + 1] = 0;
+                colors[i + 2] = 1 - highlight;
             }
             pointsRef.current.geometry.attributes.color.needsUpdate = true;
 
@@ -165,9 +163,9 @@ const Sphere = forwardRef<SphereRef, SphereProps>(({ radius, widthSegments, heig
             // Reset colors to blue
             const colors = pointsRef.current.geometry.attributes.color.array as Float32Array;
             for (let i = 0; i < colors.length; i += 3) {
-                colors[i] = 0;     // R
-                colors[i + 1] = 0; // G
-                colors[i + 2] = 1; // B
+                colors[i] = 0;
+                colors[i + 1] = 0;
+                colors[i + 2] = 1;
             }
             pointsRef.current.geometry.attributes.color.needsUpdate = true;
         }
@@ -175,7 +173,6 @@ const Sphere = forwardRef<SphereRef, SphereProps>(({ radius, widthSegments, heig
   };
 
   const handleMouseDown = (event: ThreeEvent<PointerEvent>) => {
-    // Don't handle mouse events if playing
     if (isPlaying) return;
     
     if (event.button === 0) {
@@ -186,7 +183,6 @@ const Sphere = forwardRef<SphereRef, SphereProps>(({ radius, widthSegments, heig
   };
 
   const handleMouseUp = (event: ThreeEvent<PointerEvent>) => {
-    // Don't handle mouse events if playing
     if (isPlaying) return;
     
     if (event.button === 0) {
@@ -205,13 +201,13 @@ const Sphere = forwardRef<SphereRef, SphereProps>(({ radius, widthSegments, heig
       const columnIndex = vertexIndex % (widthSegments + 1);
       
       if (isPlaying && columnIndex === currentColumn) {
-        colors[i] = 1;     // R
-        colors[i + 1] = 1; // G
-        colors[i + 2] = 0; // B
+        colors[i] = 1;
+        colors[i + 1] = 1;
+        colors[i + 2] = 0;
       } else {
-        colors[i] = 0;     // R
-        colors[i + 1] = 0; // G
-        colors[i + 2] = 1; // B
+        colors[i] = 0;
+        colors[i + 1] = 0;
+        colors[i + 2] = 1;
       }
     }
     
