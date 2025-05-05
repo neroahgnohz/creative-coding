@@ -82,6 +82,18 @@ const CollectiveHarmonyClient = () => {
                     {note}
                 </button>
             ))}
+
+            {/* Controls top-right */}
+            <div className="absolute top-4 right-4 flex flex-col space-y-2 bg-gray-800 bg-opacity-50 p-4 rounded">
+                <label className="flex items-center space-x-2">
+                    <span className="text-sm">BPM:</span>
+                    <span className="text-sm">{bpm}</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                    <span className="text-sm">Chord:</span>
+                    <span className="text-sm">{chord}</span>
+                </label>
+            </div>
         </div>
     );
 }

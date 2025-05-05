@@ -5,7 +5,6 @@ import {
     getDatabase,
     ref,
     onValue,
-    push,
     set,
     Database
   } from 'firebase/database';
@@ -104,7 +103,7 @@ const CollectiveHarmony = () => {
         Tone.getTransport().bpm.value = bpm;
         Tone.getTransport().start();
 
-        const id = Tone.getTransport().scheduleRepeat((time) => {
+        const id = Tone.getTransport().scheduleRepeat(_ => {
             setIsPulse(true);
             setTimeout(() => setIsPulse(false), 100);
         }, '4n')
@@ -134,8 +133,8 @@ const CollectiveHarmony = () => {
                 {/* <div className="absolute left-0 top-0 w-[1px] h-full bg-white bg-opacity-70 transform -translate-x-1/2" /> */}
             </div>
 
-        {/* Chord nodes on left */}
-        <div className="absolute left-8 flex flex-col space-y-4">
+            {/* Chord nodes on left */}
+            <div className="absolute left-8 flex flex-col space-y-4">
                 {CHORDS[chord].map(note => (
                 <div key={note}
                     className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-sm">
@@ -172,7 +171,7 @@ const CollectiveHarmony = () => {
                     </select>
                 </label>
             </div>
-            </div>
+        </div>
         )
 }
 
