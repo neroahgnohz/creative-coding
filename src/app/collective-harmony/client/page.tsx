@@ -1,7 +1,6 @@
 "use client"
 import { firebaseConfig } from "@/config/firebase";
 import { CHORDS } from "@/lib/harmonyUtil";
-import { on } from "events";
 import { getApps, initializeApp } from "firebase/app";
 import { getAuth, signInAnonymously } from "firebase/auth";
 import { Database, getDatabase, onDisconnect, onValue, ref, set } from "firebase/database";

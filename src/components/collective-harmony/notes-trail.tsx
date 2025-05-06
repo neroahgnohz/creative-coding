@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
+import type p5 from "p5";
 
 const Sketch = dynamic(() => import("react-p5"), { ssr: false });
 
@@ -23,18 +24,16 @@ const NotesTrail: React.FC<NotesTrailProps> = ({
         activeRef.current = activeNodes;
     }, [activeNodes]);
 
-    const setup = (p5: any, canvasParentRef: Element) => {
+    const setup = (p5: p5, canvasParentRef: Element) => {
         p5.createCanvas(windowWidth, windowHeight).parent(canvasParentRef);
         p5.frameRate(30);
     };
 
     const getNodeIndex = (note: string) => {
-        console.log("note", note);
-        console.log("notes", notes);
         return notes.findIndex((n) => n === note);
     };
 
-    const draw = (p5: any) => {
+    const draw = (p5: p5) => {
         p5.background(3, 7, 18);
 
         const rowHeight = windowHeight / notes.length;
@@ -59,11 +58,11 @@ const NotesTrail: React.FC<NotesTrailProps> = ({
         for (const [color, trail] of Object.entries(trails)) {
             p5.fill(color);
             p5.noStroke();
-            for (let point of trail) {
+            for (const point of trail) {
                 p5.rect(point.x, point.y, rowHeight, rowHeight);
                 point.x += 5;
             }
-            trails[color] = trail.filter(pt => pt.x < windowWidth);
+            trails[color] = trail;
         }
     };
 
