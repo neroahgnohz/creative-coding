@@ -1,6 +1,7 @@
 "use client"
 import { firebaseConfig } from "@/config/firebase";
 import { CHORDS } from "@/lib/harmonyUtil";
+import { on } from "events";
 import { getApps, initializeApp } from "firebase/app";
 import { getAuth, signInAnonymously } from "firebase/auth";
 import { Database, getDatabase, onDisconnect, onValue, ref, set } from "firebase/database";
@@ -51,18 +52,29 @@ const CollectiveHarmonyClient = () => {
                     .then(() => console.log(`User ${userId} added to database`))
                     .catch((error) => console.error("Error adding user to database:", error));
 
+            const userDataRef = ref(db, `${userId}`);
+            set(userDataRef, { note: "" })
+                .then(() => console.log(`User ${userId} data initialized`))
+                .catch((error) => console.error("Error initializing user data:", error));
+
             onDisconnect(userRef)
                 .remove()
                 .then(() => console.log(`onDisconnect set for user ${userId}`))
                 .catch((error) => console.error("Error setting onDisconnect:", error));
+
+            onDisconnect(userDataRef)
+                .remove()
+                .then(() => console.log(`onDisconnect set for user ${userId} data`))
+                .catch((error) => console.error("Error setting onDisconnect for user data:", error));
           return () => unsubscribe();
         }
     }, [db, isAuthenticated, userId]);
 
-    const SendNote = (note: string) => {
+    const SendNote = (note: string, status: string) => {
         if (db && userId) {
-            const userNoteRef = ref(db, `users/${userId}/nextNote`);
-            set(userNoteRef, { note, sentAt: Date.now() })
+            console.log(`Sending note "${note}" with status "${status}" to user ${userId}`);
+            const userNoteRef = ref(db, `${userId}`);
+            set(userNoteRef, { note, sentAt: Date.now(), status})
                 .then(() => console.log(`Note "${note}" sent to user ${userId}`))
                 .catch((error) => console.error("Error sending note:", error));
         } else {
@@ -76,8 +88,14 @@ const CollectiveHarmonyClient = () => {
                 <button
                     key={note}
                     className="w-20 h-20 bg-gray-700 rounded-full text-white font-semibold text-lg flex items-center justify-center hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                    onClick={() => SendNote(note)}
-                    // onTouchStart={() => SendNote(note)}
+                    onMouseDown={(event) => {
+                        event.preventDefault();
+                        SendNote(note, "press");
+                    }}
+                    onMouseUp={(event) => {
+                        event.preventDefault();
+                        SendNote(note, "release");
+                    }}
                 >
                     {note}
                 </button>

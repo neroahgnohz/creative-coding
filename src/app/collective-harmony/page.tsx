@@ -10,20 +10,43 @@ import {
   } from 'firebase/database';
 import dynamic from "next/dynamic";
 import * as Tone from 'tone';
-import { CHORDS, noteToFrequency } from "@/lib/harmonyUtil";
+import { CHORDS, getUserColor } from "@/lib/harmonyUtil";
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import { firebaseConfig } from '@/config/firebase';
+import FlashingStrip from '@/components/collective-harmony/flashing-strip';
+import NotesTrail from '@/components/collective-harmony/notes-trail';
 
 const CollectiveHarmony = () => {
     const [bpm, setBpm] = useState(80);
     const [chord, setChord] = useState<keyof typeof CHORDS>('C');
-    const [isPulse, setIsPulse] = useState(false);
     const synth = useRef<Tone.PolySynth<Tone.Synth<Tone.SynthOptions>>>(null);
     const [db, setDb] = useState<Database | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [users, setUsers] = useState<Record<string, string>>({});
+    const [users, setUsers] = useState<string[]>([]);
+    const subscribedUsers: { [key: string]: boolean } = {};
+    const [windowDimensions, setWindowDimensions] = useState({
+        width: 0,
+        height: 0,
+    });
+    const [activeNodes, setActiveNodes] = useState<{ [key: string]: string }>({});
 
     useEffect(() => {
+        const updateDimensions = () => {
+            setWindowDimensions({
+                width: window.innerWidth,
+                height: window.innerHeight,
+            });
+        };
+    
+        updateDimensions();
+        window.addEventListener("resize", updateDimensions);
+        return () => window.removeEventListener("resize", updateDimensions);
+    }, []);
+
+    useEffect(() => {
+        synth.current = new Tone.PolySynth(Tone.Synth).toDestination();
+        Tone.getTransport().start();
+
         if (!getApps().length) {
             console.log(firebaseConfig);
             const app = initializeApp(firebaseConfig);
@@ -36,6 +59,13 @@ const CollectiveHarmony = () => {
                 })
                 .catch((error) => console.error("Error signing in:", error));
         }
+
+        return () => {
+            if (synth.current) {
+                synth.current.dispose();
+            }
+            Tone.getTransport().stop();
+        };
     }, []);
 
     const updateDatabase = (bpm: number, chord: string) => {
@@ -50,14 +80,29 @@ const CollectiveHarmony = () => {
         }
     };
 
-    const playNoteAtNextQuarter = (note: string) => {
+    const attackNoteAtNextQuarter = (note: string, userId: string) => {
         if (synth.current) {
-            const nextQuarterTime = Tone.getTransport().nextSubdivision('4n'); // Get the next quarter note time
+            const nextQuarterTime = Tone.getTransport().nextSubdivision('4n');
+            
             Tone.getTransport().schedule((time) => {
-                if (synth.current) {
-                    synth.current.triggerAttackRelease(note, '4n', time);
-                    console.log(`Playing note "${note}" at ${time}`);
-                }
+                synth.current?.triggerAttack(note, time);
+                console.log(`Attacking note "${note}" at ${time}`);
+                const userColor = getUserColor(userId);
+                activeNodes[userColor] = note;
+                setActiveNodes({ ...activeNodes });
+            }, nextQuarterTime);
+        }
+    };
+
+    const releaseNoteAtNextQuarter = (note: string, userId: string) => {
+        if (synth.current) {
+            const nextQuarterTime = Tone.getTransport().nextSubdivision('4n');
+            Tone.getTransport().schedule((time) => {
+                synth.current?.triggerRelease(note, time);
+                console.log(`Releasing note "${note}" at ${time}`);
+                const userColor = getUserColor(userId);
+                activeNodes[userColor] = "";
+                setActiveNodes({ ...activeNodes });
             }, nextQuarterTime);
         }
     };
@@ -71,26 +116,8 @@ const CollectiveHarmony = () => {
                 const data = snapshot.val();
                 console.log("Users updated:", data);
                 if (data) {
-                    // Save users as a dictionary { <uuid>: <note> }
-                    const usersDict: Record<string, string> = {};
-                    Object.entries(data).forEach(([uuid, userData]) => {
-                        if (typeof userData === 'object' && userData !== null && 'nextNote' in userData) {
-                            const note = typeof userData.nextNote === 'object' && userData.nextNote !== null && 'note' in userData.nextNote
-                                ? (userData.nextNote as { note: string }).note
-                                : " ";
-                            usersDict[uuid] = note;
-                            if (note != " ") {
-                                const frequency = noteToFrequency(note, 4);
-                                playNoteAtNextQuarter(frequency);
-                            }
-                        } else {
-                            usersDict[uuid] = "";
-                        }
-                    });
-                    console.log("Users dictionary:", usersDict);
-                    setUsers(usersDict);
-                } else {
-                    setUsers({});
+                    const userIds = Object.keys(data);
+                    setUsers(userIds);
                 }
             });
             return () => unsubscribe();
@@ -98,48 +125,60 @@ const CollectiveHarmony = () => {
     }, [db, isAuthenticated]);
 
     useEffect(() => {
-        updateDatabase(bpm, chord);
-        synth.current = new Tone.PolySynth(Tone.Synth).toDestination();
-        Tone.getTransport().bpm.value = bpm;
-        Tone.getTransport().start();
+        if (!db || !isAuthenticated) return;
 
-        const id = Tone.getTransport().scheduleRepeat(() => {
-            setIsPulse(true);
-            setTimeout(() => setIsPulse(false), 100);
-        }, '4n')
-
-        return () => {
-            Tone.getTransport().clear(id);
-            Tone.getTransport().stop();
+        for (const userId of users) {
+            if (!subscribedUsers[userId]) {
+                const userNoteRef = ref(db, userId);
+                const unsubscribeUser = onValue(userNoteRef, (snapshot) => {
+                    if (!snapshot.exists()) {
+                        unsubscribeUser();
+                        subscribedUsers[userId] = false;
+                        console.log(`Unsubscribed from user ${userId}`);
+                    } else {
+                        const data = snapshot.val();
+                        if (data && data.note) {
+                            console.log(`Received note "${data.note}" from user ${userId}`);
+                            if (data.status === "press") {
+                                attackNoteAtNextQuarter(data.note, userId);
+                            } else if (data.status === "release") {
+                                releaseNoteAtNextQuarter(data.note, userId);
+                            }
+                        }
+                    }
+                });
+                subscribedUsers[userId] = true;
+            }
         }
-    }, [bpm, chord]);
+    }, [users])
 
     useEffect(() => {
-        Tone.getTransport().bpm.rampTo(bpm, 0.1);
-    }, [bpm]);
+        updateDatabase(bpm, chord);
+        Tone.getTransport().bpm.value = bpm;
+    }, [bpm, chord]);
+
+
 
     return (
         <div className="relative w-screen h-screen bg-gray-950 text-white flex items-center justify-center overflow-hidden">
-            {/* Pulse Area */}
-            <div
-                className={
-                    `absolute left-[25%] top-0 w-20 h-full transition-transform duration-100 ease-out ` +
-                    (isPulse ? 'opacity-80' : 'opacity-50')
-                }
-                style={{
-                    background: 'linear-gradient(to right, rgba(82, 82, 82, 1) 10%, rgba(82, 82, 82, 0.5) 50%, rgba(82, 82, 82, 0) 100%)',
-                }}
-            >
-                {/* <div className="absolute left-0 top-0 w-[1px] h-full bg-white bg-opacity-70 transform -translate-x-1/2" /> */}
+            
+            <FlashingStrip bpm={bpm}/>
+
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <NotesTrail
+                    notes={CHORDS[chord]}
+                    windowWidth={windowDimensions.width}
+                    windowHeight={496}
+                    activeNodes={activeNodes}
+                />
             </div>
 
             {/* Chord nodes on left */}
             <div className="absolute left-8 flex flex-col space-y-4">
                 {CHORDS[chord].map(note => (
-                <div key={note}
-                    className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-sm">
-                    {note}
-                </div>
+                    <div key={note} className="relative w-full h-12 bg-gray-800 rounded">
+                        <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white">{note}</span>
+                    </div>
                 ))}
             </div>
 
@@ -147,7 +186,7 @@ const CollectiveHarmony = () => {
             <div className="absolute top-4 right-4 flex flex-col space-y-2 bg-gray-800 bg-opacity-50 p-4 rounded">
                 <label className="flex items-center space-x-2">
                     <span className="text-sm">Players:</span>
-                    <span className="text-sm">{Object.keys(users).length}</span>
+                    <span className="text-sm">{users.length}</span>
                 </label>
                 <label className="flex items-center space-x-2">
                     <span className="text-sm">BPM:</span>
