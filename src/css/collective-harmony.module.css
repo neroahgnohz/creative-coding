@@ -1,0 +1,16 @@
+.noSelect {
+    /* standard */
+    user-select: none;
+    /* Safari/Chrome */
+    -webkit-user-select: none;
+    /* Firefox */
+    -moz-user-select: none;
+    /* IE10+ */
+    -ms-user-select: none;
+  
+    /* disable the iOS copy/paste callout */
+    -webkit-touch-callout: none;
+  
+    /* disable HTML5 drag (Chrome, Safari) */
+    -webkit-user-drag: none;
+}

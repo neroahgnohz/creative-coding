@@ -7,6 +7,7 @@ import { Database, getDatabase, onDisconnect, onValue, ref, set } from "firebase
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { v4 as uuidv4 } from 'uuid';
+import styles from "@/css/collective-harmony.module.css";
 
 
 const CollectiveHarmonyClient = () => {
@@ -86,7 +87,8 @@ const CollectiveHarmonyClient = () => {
             {CHORDS[chord].map((note) => (
                 <button
                     key={note}
-                    className="select-none touch-none w-20 h-20 bg-gray-700 rounded-full text-white font-semibold text-lg flex items-center justify-center hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    draggable={false}
+                    className={`${styles.noSelect} w-20 h-20 bg-gray-700 rounded-full text-white font-semibold text-lg flex items-center justify-center hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400`}
                     onMouseDown={(event) => {
                         event.preventDefault();
                         SendNote(note, "press");
@@ -103,6 +105,8 @@ const CollectiveHarmonyClient = () => {
                         event.preventDefault();
                         SendNote(note, "release");
                     }}
+                    onSelect={e => e.preventDefault()}
+                    onDragStart={e => e.preventDefault()}
                 >
                     {note}
                 </button>
