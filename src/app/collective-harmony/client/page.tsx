@@ -5,7 +5,7 @@ import { getApps, initializeApp } from "firebase/app";
 import { getAuth, signInAnonymously } from "firebase/auth";
 import { Database, getDatabase, onDisconnect, onValue, ref, set } from "firebase/database";
 import dynamic from "next/dynamic";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -59,7 +59,7 @@ const CollectiveHarmonyClient = () => {
         }
     }, [db, isAuthenticated, userId]);
 
-    var SendNote = (note: string) => {
+    const SendNote = (note: string) => {
         if (db && userId) {
             const userNoteRef = ref(db, `users/${userId}/nextNote`);
             set(userNoteRef, { note, sentAt: Date.now() })

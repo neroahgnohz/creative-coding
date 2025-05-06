@@ -103,7 +103,7 @@ const CollectiveHarmony = () => {
         Tone.getTransport().bpm.value = bpm;
         Tone.getTransport().start();
 
-        const id = Tone.getTransport().scheduleRepeat(_ => {
+        const id = Tone.getTransport().scheduleRepeat(() => {
             setIsPulse(true);
             setTimeout(() => setIsPulse(false), 100);
         }, '4n')
