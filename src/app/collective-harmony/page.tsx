@@ -84,7 +84,7 @@ const CollectiveHarmony = () => {
 
     const attackNoteAtNextQuarter = (note: string, userId: string) => {
         if (synth.current) {
-            const nextQuarterTime = Tone.getTransport().nextSubdivision('4n');
+            const nextQuarterTime = Tone.getTransport().nextSubdivision('32n');
             
             Tone.getTransport().schedule((time) => {
                 synth.current?.triggerAttack(note, time);
@@ -98,7 +98,7 @@ const CollectiveHarmony = () => {
 
     const releaseNoteAtNextQuarter = (note: string, userId: string) => {
         if (synth.current) {
-            const nextQuarterTime = Tone.getTransport().nextSubdivision('4n');
+            const nextQuarterTime = Tone.getTransport().nextSubdivision('32n');
             Tone.getTransport().schedule((time) => {
                 synth.current?.triggerRelease(note, time);
                 console.log(`Releasing note "${note}" at ${time}`);
