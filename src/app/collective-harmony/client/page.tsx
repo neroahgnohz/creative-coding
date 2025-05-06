@@ -95,6 +95,14 @@ const CollectiveHarmonyClient = () => {
                         event.preventDefault();
                         SendNote(note, "release");
                     }}
+                    onTouchStart={(event) => {
+                        event.preventDefault();
+                        SendNote(note, "press");
+                    }}
+                    onTouchEnd={(event) => {
+                        event.preventDefault();
+                        SendNote(note, "release");
+                    }}
                 >
                     {note}
                 </button>
