@@ -103,18 +103,6 @@ const CollectiveHarmonyClient = () => {
                         event.preventDefault();
                         SendNote(note, "release");
                     }}
-                    onTouchCancel={(event) => {
-                        event.preventDefault();
-                        SendNote(note, "release");
-                    }}
-                    onTouchMove={(event) => {
-                        event.preventDefault();
-                        SendNote(note, "release");
-                    }}
-                    onMouseLeave={(event) => {
-                        event.preventDefault();
-                        SendNote(note, "release");
-                    }}
                 >
                     {note}
                 </button>

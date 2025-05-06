@@ -23,7 +23,7 @@ const CollectiveHarmony = () => {
     const [db, setDb] = useState<Database | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [users, setUsers] = useState<string[]>([]);
-    const subscribedUsers: { [key: string]: boolean } = {};
+    const subscribedUsersRef = useRef<{ [key: string]: () => void }>({});
     const [windowDimensions, setWindowDimensions] = useState({
         width: 0,
         height: 0,
@@ -45,6 +45,9 @@ const CollectiveHarmony = () => {
 
     useEffect(() => {
         synth.current = new Tone.PolySynth(Tone.Synth).toDestination();
+        const volumeNode = new Tone.Volume(-12).toDestination();
+        synth.current.connect(volumeNode);
+        
         Tone.getTransport().start();
 
         if (!getApps().length) {
@@ -126,16 +129,13 @@ const CollectiveHarmony = () => {
 
     useEffect(() => {
         if (!db || !isAuthenticated) return;
-
-        for (const userId of users) {
-            if (!subscribedUsers[userId]) {
+    
+        // Subscribe to each user's note changes
+        users.forEach((userId) => {
+            if (!subscribedUsersRef.current[userId]) {
                 const userNoteRef = ref(db, userId);
                 const unsubscribeUser = onValue(userNoteRef, (snapshot) => {
-                    if (!snapshot.exists()) {
-                        unsubscribeUser();
-                        subscribedUsers[userId] = false;
-                        console.log(`Unsubscribed from user ${userId}`);
-                    } else {
+                    if (snapshot.exists()) {
                         const data = snapshot.val();
                         if (data && data.note) {
                             console.log(`Received note "${data.note}" from user ${userId}`);
@@ -147,10 +147,22 @@ const CollectiveHarmony = () => {
                         }
                     }
                 });
-                subscribedUsers[userId] = true;
+    
+                // Store the unsubscribe function
+                subscribedUsersRef.current[userId] = unsubscribeUser;
             }
-        }
-    }, [users])
+        });
+    
+        // Cleanup subscriptions for users that are no longer in the list
+        return () => {
+            Object.keys(subscribedUsersRef.current).forEach((userId) => {
+                if (!users.includes(userId)) {
+                    subscribedUsersRef.current[userId](); // Unsubscribe
+                    delete subscribedUsersRef.current[userId];
+                }
+            });
+        };
+    }, [users, db, isAuthenticated]);
 
     useEffect(() => {
         updateDatabase(bpm, chord);

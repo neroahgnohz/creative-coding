@@ -7,11 +7,6 @@ export const CHORDS = {
     "F": ["F4", "G4", "A4", "Bb4", "C5", "D5", "E5", "F5"],
 }
 
-/**
- * Generates a random color based on a UUID string.
- * @param uuid - The UUID string.
- * @returns A hex color string.
- */
 export const getUserColor = (uuid: string): string => {
     // Hash the UUID string to generate a consistent number
     let hash = 0;
@@ -19,9 +14,18 @@ export const getUserColor = (uuid: string): string => {
         hash = uuid.charCodeAt(i) + ((hash << 5) - hash);
     }
 
-    // Convert the hash to a hex color
-    const color = `#${((hash >> 24) & 0xff).toString(16).padStart(2, '0')}${((hash >> 16) & 0xff).toString(16).padStart(2, '0')}${((hash >> 8) & 0xff).toString(16).padStart(2, '0')}`;
+    // Convert the hash to RGB values
+    const r = (hash >> 16) & 0xff;
+    const g = (hash >> 8) & 0xff;
+    const b = hash & 0xff;
 
-    // Ensure the color is valid (fallback to a default color if invalid)
-    return /^#[0-9A-F]{6}$/i.test(color) ? color : '#000000';
+    // Blend the color with white to make it lighter
+    const blendWithWhite = (color: number) => Math.min(255, Math.floor(color + (255 - color) * 0.5));
+
+    const lighterR = blendWithWhite(r);
+    const lighterG = blendWithWhite(g);
+    const lighterB = blendWithWhite(b);
+
+    // Convert the lighter RGB values to a hex color
+    return `#${lighterR.toString(16).padStart(2, '0')}${lighterG.toString(16).padStart(2, '0')}${lighterB.toString(16).padStart(2, '0')}`;
 };
