@@ -5,12 +5,14 @@ import { getApps, initializeApp } from "firebase/app";
 import { getAuth, signInAnonymously } from "firebase/auth";
 import { Database, getDatabase, onDisconnect, onValue, ref, set } from "firebase/database";
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from 'uuid';
 import styles from "@/css/collective-harmony.module.css";
 
 
 const CollectiveHarmonyClient = () => {
+    const activeTouchRef = useRef<string | null>(null);
+
     const [bpm, setBpm] = useState(80);
     const [chord, setChord] = useState<keyof typeof CHORDS>('C');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -82,6 +84,19 @@ const CollectiveHarmonyClient = () => {
         }
     }
     
+    const handleTouchStart = (note: string) => {
+        if (activeTouchRef.current === note) return; // Prevent duplicate presses
+        activeTouchRef.current = note;
+        SendNote(note, "press");
+    };
+    
+    const handleTouchEnd = (note: string) => {
+        if (activeTouchRef.current === note) {
+            SendNote(note, "release");
+            activeTouchRef.current = null; // Clear the active touch
+        }
+    };
+    
     return (
         <div className="select-none touch-none w-screen h-screen bg-gray-950 text-white flex items-center justify-center gap-4">
             {CHORDS[chord].map((note) => (
@@ -103,19 +118,11 @@ const CollectiveHarmonyClient = () => {
                     }}
                     onTouchStart={(event) => {
                         event.preventDefault();
-                        SendNote(note, "press");
+                        handleTouchStart(note);
                     }}
                     onTouchEnd={(event) => {
                         event.preventDefault();
-                        SendNote(note, "release");
-                    }}
-                    onTouchMove={(event) => {
-                        event.preventDefault();
-                        SendNote(note, "release");
-                    }}
-                    onTouchCancel={(event) => {
-                        event.preventDefault();
-                        SendNote(note, "release");
+                        handleTouchEnd(note);
                     }}
                     onSelect={e => e.preventDefault()}
                     onDragStart={e => e.preventDefault()}
