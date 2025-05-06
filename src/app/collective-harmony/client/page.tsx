@@ -82,11 +82,11 @@ const CollectiveHarmonyClient = () => {
     }
     
     return (
-        <div className="w-screen h-screen bg-gray-950 text-white flex items-center justify-center gap-4">
+        <div className="select-none w-screen h-screen bg-gray-950 text-white flex items-center justify-center gap-4">
             {CHORDS[chord].map((note) => (
                 <button
                     key={note}
-                    className="w-20 h-20 bg-gray-700 rounded-full text-white font-semibold text-lg flex items-center justify-center hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    className="select-none w-20 h-20 bg-gray-700 rounded-full text-white font-semibold text-lg flex items-center justify-center hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
                     onMouseDown={(event) => {
                         event.preventDefault();
                         SendNote(note, "press");
@@ -100,6 +100,18 @@ const CollectiveHarmonyClient = () => {
                         SendNote(note, "press");
                     }}
                     onTouchEnd={(event) => {
+                        event.preventDefault();
+                        SendNote(note, "release");
+                    }}
+                    onTouchCancel={(event) => {
+                        event.preventDefault();
+                        SendNote(note, "release");
+                    }}
+                    onTouchMove={(event) => {
+                        event.preventDefault();
+                        SendNote(note, "release");
+                    }}
+                    onMouseLeave={(event) => {
                         event.preventDefault();
                         SendNote(note, "release");
                     }}
