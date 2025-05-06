@@ -44,9 +44,8 @@ const CollectiveHarmony = () => {
     }, []);
 
     useEffect(() => {
-        synth.current = new Tone.PolySynth(Tone.Synth).toDestination();
-        const volumeNode = new Tone.Volume(-12).toDestination();
-        synth.current.connect(volumeNode);
+        const masterGain = new Tone.Gain(0.5).toDestination();
+        synth.current = new Tone.PolySynth(Tone.Synth).toDestination().connect(masterGain);
         
         Tone.getTransport().start();
 
